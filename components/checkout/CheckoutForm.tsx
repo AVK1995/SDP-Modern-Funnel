@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
 import { COUNTRIES } from '@/lib/countries';
 import { COUPONS, ORIGINAL_PRICE_INR, PRICE_INR, fmtINR, type Coupon } from '@/lib/pricing';
 import { captureUtm, restoreUtm } from '@/lib/utm';
@@ -513,6 +514,11 @@ export default function CheckoutForm() {
 
   return (
     <>
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="afterInteractive"
+      />
+
       <div className={`checkout-toast${toast ? ' visible' : ''}`} role="alert">
         {toast}
         <button className="checkout-toast-close" onClick={dismissToast} aria-label="Dismiss">✕</button>

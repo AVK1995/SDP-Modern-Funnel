@@ -1,6 +1,21 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { Bebas_Neue, Manrope } from 'next/font/google';
 import './globals.css';
+
+const bebasNeue = Bebas_Neue({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-bebas',
+  display: 'swap',
+});
+
+const manrope = Manrope({
+  weight: ['400', '500', '600', '700', '800'],
+  subsets: ['latin'],
+  variable: '--font-manrope',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://sdp.sciencedrivenperformance.in'),
@@ -14,23 +29,46 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${bebasNeue.variable} ${manrope.variable}`}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700;800&display=swap"
-          rel="stylesheet"
+          rel="preload"
+          as="image"
+          href="/vimeo-thumbs/1190060331.webp"
+          fetchPriority="high"
         />
+        <link rel="preconnect" href="https://player.vimeo.com" />
+        <link rel="dns-prefetch" href="https://player.vimeo.com" />
       </head>
       <body>
         {children}
-        <Script
-          src="https://checkout.razorpay.com/v1/checkout.js"
-          strategy="lazyOnload"
-        />
         {process.env.NODE_ENV === 'production' && (
           <>
+            {process.env.NEXT_PUBLIC_META_PIXEL_ID && (
+              <>
+                <Script id="meta-pixel" strategy="afterInteractive">
+                  {`!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '${process.env.NEXT_PUBLIC_META_PIXEL_ID}');
+fbq('track', 'PageView');`}
+                </Script>
+                <noscript>
+                  <img
+                    height="1"
+                    width="1"
+                    style={{ display: 'none' }}
+                    alt=""
+                    src={`https://www.facebook.com/tr?id=${process.env.NEXT_PUBLIC_META_PIXEL_ID}&ev=PageView&noscript=1`}
+                  />
+                </noscript>
+              </>
+            )}
             <Script
               src="https://www.googletagmanager.com/gtag/js?id=G-7Y0J49L948"
               strategy="afterInteractive"

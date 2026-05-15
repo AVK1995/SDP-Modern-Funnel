@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
       console.error('[verify-payment] CRITICAL: PABBLY_WEBHOOK_URL not set — webhook skipped');
     }
 
-    const metaPixelId = process.env.META_PIXEL_ID;
+    const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? process.env.META_PIXEL_ID;
     const metaAccessToken = process.env.META_CAPI_ACCESS_TOKEN;
     if (metaPixelId && metaAccessToken && !isTestBypass) {
       const fbc = req.cookies.get('_fbc')?.value;

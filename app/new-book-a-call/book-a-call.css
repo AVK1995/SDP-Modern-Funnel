@@ -56,7 +56,7 @@ h1, h2, h3, h4, h5 {
   gap: 48px;
 }
 .announce-track .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); flex: 0 0 auto; }
-.announce-track b { color: var(--cyan); font-weight: 900; }
+.announce-track b { color: var(--cyan); font-weight: 800; }
 @keyframes annScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 /* ── Section primitives ────────────────────────────────────────── */

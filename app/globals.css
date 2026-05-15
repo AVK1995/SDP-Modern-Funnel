@@ -21,8 +21,8 @@
   --success: #10B981;
   --danger:  #DC2626;
 
-  --fh: 'Bebas Neue', 'Helvetica Neue', sans-serif;
-  --fb: 'Manrope', 'Helvetica Neue', sans-serif;
+  --fh: var(--font-bebas), 'Bebas Neue', 'Helvetica Neue', sans-serif;
+  --fb: var(--font-manrope), 'Manrope', 'Helvetica Neue', sans-serif;
 
   --r-sm: 8px;
   --r:    12px;

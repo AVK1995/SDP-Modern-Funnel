@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import Image from 'next/image';
 import { captureUtm, decorateHref } from '@/lib/utm';
 import { useScrollReveal } from '@/components/shared/useScrollReveal';
 import AnimatedCounter from '@/components/shared/AnimatedCounter';
@@ -174,7 +175,7 @@ function SiteHeader() {
    ============================================================ */
 
 const HERO_MARKERS = ['HbA1c', 'Triglycerides', 'Blood Pressure', 'LDL Cholesterol'];
-const VSL_THUMB = 'https://vumbnail.com/1190060331.jpg';
+const VSL_THUMB = '/vimeo-thumbs/1190060331.webp';
 const VSL_URL = 'https://player.vimeo.com/video/1184772764';
 
 function VSLVideo() {
@@ -238,7 +239,16 @@ function VSLVideo() {
       >
         {!playing && (
           <>
-            <div className="sdp-video-thumb on" style={{ backgroundImage: `url("${VSL_THUMB}")` }} />
+            <div className="sdp-video-thumb on">
+              <img
+                src={VSL_THUMB}
+                alt=""
+                width={640}
+                height={360}
+                fetchPriority="high"
+                decoding="async"
+              />
+            </div>
             <div className="sdp-play">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8 5v14l11-7z" />
@@ -384,9 +394,13 @@ function AmardeepCase() {
         <div className="sdp-case-card" data-sdp-reveal style={{ ['--d' as string]: '.12s' }}>
           <div className="sdp-case-profile">
             <div className="sdp-case-avatar">
-              <img
+              <Image
                 src="/transformation-images/amardeep%20profile.png"
                 alt="Amardeep Singh"
+                width={730}
+                height={737}
+                sizes="(max-width: 768px) 100vw, 640px"
+                priority
               />
             </div>
             <div className="sdp-case-id">
@@ -771,21 +785,21 @@ function TestimonialCarousel() {
   );
 }
 
-interface BACard { src: string; alt: string; }
+interface BACard { src: string; alt: string; width: number; height: number; }
 
 const BA_CARDS: BACard[] = [
-  { src: '/transformation-images/amardeep.png', alt: 'Amardeep transformation: 104 kg to 78 kg' },
-  { src: '/transformation-images/nitesh-k.png', alt: 'Nitesh K transformation: 68 kg to 59 kg, HbA1c 5.6' },
-  { src: '/transformation-images/karthik-s.jpeg', alt: 'Karthik S transformation' },
-  { src: '/transformation-images/gaurav-j.jpg', alt: 'Gaurav J transformation: 86 kg to 68 kg' },
-  { src: '/transformation-images/c6.png', alt: 'SDP client transformation' },
-  { src: '/transformation-images/c10.png', alt: 'SDP client transformation' },
-  { src: '/transformation-images/c11.png', alt: 'SDP client transformation' },
-  { src: '/transformation-images/c12.png', alt: 'SDP client transformation' },
-  { src: '/transformation-images/c13.png', alt: 'SDP client transformation' },
-  { src: '/transformation-images/c14.png', alt: 'SDP client transformation' },
-  { src: '/transformation-images/prem-g.png', alt: 'Prem G transformation' },
-  { src: '/transformation-images/sreejith.png', alt: 'Sreejith transformation' },
+  { src: '/transformation-images/amardeep.png', alt: 'Amardeep transformation: 104 kg to 78 kg', width: 1080, height: 1080 },
+  { src: '/transformation-images/nitesh-k.png', alt: 'Nitesh K transformation: 68 kg to 59 kg, HbA1c 5.6', width: 1080, height: 1080 },
+  { src: '/transformation-images/karthik-s.jpeg', alt: 'Karthik S transformation', width: 1080, height: 1080 },
+  { src: '/transformation-images/gaurav-j.jpg', alt: 'Gaurav J transformation: 86 kg to 68 kg', width: 1024, height: 1280 },
+  { src: '/transformation-images/c6.png', alt: 'SDP client transformation', width: 966, height: 1009 },
+  { src: '/transformation-images/c10.png', alt: 'SDP client transformation', width: 966, height: 1009 },
+  { src: '/transformation-images/c11.png', alt: 'SDP client transformation', width: 966, height: 1009 },
+  { src: '/transformation-images/c12.png', alt: 'SDP client transformation', width: 966, height: 1009 },
+  { src: '/transformation-images/c13.png', alt: 'SDP client transformation', width: 966, height: 1009 },
+  { src: '/transformation-images/c14.png', alt: 'SDP client transformation', width: 966, height: 1009 },
+  { src: '/transformation-images/prem-g.png', alt: 'Prem G transformation', width: 1536, height: 1024 },
+  { src: '/transformation-images/sreejith.png', alt: 'Sreejith transformation', width: 1254, height: 1254 },
 ];
 
 function BeforeAfterGrid() {
@@ -964,7 +978,7 @@ function BeforeAfterGrid() {
           <div ref={setRef} className="sdp-bacar-set" id="sdp-bacar-set">
             {BA_CARDS.map((card, idx) => (
               <div key={idx} className="sdp-ba-card" data-ba-idx={idx}>
-                <div className="sdp-ba-img"><img src={card.src} alt={card.alt} /></div>
+                <div className="sdp-ba-img"><Image src={card.src} alt={card.alt} width={card.width} height={card.height} sizes="(max-width: 768px) 80vw, 360px" /></div>
               </div>
             ))}
           </div>
@@ -995,7 +1009,7 @@ function BeforeAfterGrid() {
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-            <img className="sdp-lbox-img" src={BA_CARDS[lightboxIdx].src} alt={BA_CARDS[lightboxIdx].alt} />
+            <Image className="sdp-lbox-img" src={BA_CARDS[lightboxIdx].src} alt={BA_CARDS[lightboxIdx].alt} width={BA_CARDS[lightboxIdx].width} height={BA_CARDS[lightboxIdx].height} sizes="(max-width: 768px) 100vw, 1100px" />
             <button className="sdp-lbox-nav sdp-lbox-next" type="button" aria-label="Next" onClick={() => nav(1)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />
@@ -1059,10 +1073,13 @@ function FounderAuthority() {
         <div className="sdp-founder-grid">
           <div className="sdp-founder-card" data-sdp-reveal style={{ ['--d' as string]: '.16s' }}>
             <div className="sdp-founder-photo" aria-hidden="true">
-              <img
+              <Image
                 className="sdp-founder-img"
                 src="/transformation-images/sdp%20coaches.png"
                 alt="Anish and Shubham, SDP co-founders"
+                width={402}
+                height={386}
+                sizes="(max-width: 768px) 80vw, 402px"
               />
             </div>
             <div>
@@ -1282,9 +1299,12 @@ function SaketFeatured() {
           <div className="sdp-saket-card">
             <div className="sdp-saket-head">
               <div className="sdp-saket-photo">
-                <img
+                <Image
                   src="/transformation-images/saket%20profile.png"
                   alt="Saket Gokhale"
+                  width={1254}
+                  height={1254}
+                  sizes="(max-width: 768px) 30vw, 200px"
                 />
               </div>
               <div className="sdp-saket-meta">
