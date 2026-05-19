@@ -8,33 +8,42 @@ async function sendMetaCapiEvent(params: {
   paymentId: string;
   email: string;
   phone: string;
+  firstName: string;
+  lastName: string;
+  city: string;
+  country: string;
+  eventSourceUrl: string;
   fbc: string | undefined;
   fbp: string | undefined;
   clientIp: string | undefined;
   clientUserAgent: string | undefined;
 }) {
-  const hashedEmail = crypto
-    .createHash('sha256')
-    .update(params.email.trim().toLowerCase())
-    .digest('hex');
+  const sha256 = (v: string) => crypto.createHash('sha256').update(v).digest('hex');
 
-  const rawPhone = params.phone.replace(/\D/g, '');
-  const hashedPhone = rawPhone
-    ? crypto.createHash('sha256').update(rawPhone).digest('hex')
-    : undefined;
+  const normEmail   = params.email.trim().toLowerCase();
+  const normPhone   = params.phone.replace(/\D/g, '');
+  const normFn      = params.firstName.trim().toLowerCase();
+  const normLn      = params.lastName.trim().toLowerCase();
+  const normCt      = params.city.trim().toLowerCase().replace(/[^a-z]/g, '');
+  const normCountry = params.country.trim().toLowerCase();
 
   const event = {
     event_name: 'SDPPurchase',
     event_time: Math.floor(Date.now() / 1000),
     event_id: params.paymentId,
     action_source: 'website',
+    event_source_url: params.eventSourceUrl,
     user_data: {
-      em: [hashedEmail],
-      ...(hashedPhone && { ph: [hashedPhone] }),
-      ...(params.fbc && { fbc: params.fbc }),
-      ...(params.fbp && { fbp: params.fbp }),
+      ...(normEmail   && { em:      [sha256(normEmail)] }),
+      ...(normPhone   && { ph:      [sha256(normPhone)] }),
+      ...(normFn      && { fn:      [sha256(normFn)] }),
+      ...(normLn      && { ln:      [sha256(normLn)] }),
+      ...(normCt      && { ct:      [sha256(normCt)] }),
+      ...(normCountry && { country: [sha256(normCountry)] }),
+      ...(params.fbc             && { fbc: params.fbc }),
+      ...(params.fbp             && { fbp: params.fbp }),
       ...(params.clientUserAgent && { client_user_agent: params.clientUserAgent }),
-      ...(params.clientIp && { client_ip_address: params.clientIp }),
+      ...(params.clientIp        && { client_ip_address: params.clientIp }),
     },
     custom_data: {
       currency: 'INR',
@@ -70,6 +79,7 @@ export async function POST(req: NextRequest) {
       customer,
       utm,
       couponCode,
+      eventSourceUrl,
     }: {
       orderId: string;
       paymentId: string;
@@ -77,6 +87,7 @@ export async function POST(req: NextRequest) {
       customer: CustomerData;
       utm: UtmData;
       couponCode?: string;
+      eventSourceUrl?: string;
     } = body;
 
     if (!orderId || !paymentId) {
@@ -196,6 +207,11 @@ export async function POST(req: NextRequest) {
           paymentId,
           email: customer.email,
           phone: fullPhone,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          city: customer.city,
+          country: customer.countryCode,
+          eventSourceUrl: eventSourceUrl ?? 'https://sdp.sciencedrivenperformance.in/new-checkout-page',
           fbc,
           fbp,
           clientIp,

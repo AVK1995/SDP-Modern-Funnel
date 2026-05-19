@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
+import { setMetaAdvancedMatching } from '@/lib/analytics';
 import { COUNTRIES } from '@/lib/countries';
 import { COUPONS, ORIGINAL_PRICE_INR, PRICE_INR, fmtINR, type Coupon } from '@/lib/pricing';
 import { captureUtm, restoreUtm } from '@/lib/utm';
@@ -375,21 +376,6 @@ export default function CheckoutForm() {
     const selectedCountry = COUNTRIES.find(c => c.code === countryCode) ?? COUNTRIES[0];
     const couponCode = appliedCoupon?.code;
 
-    // Meta Pixel: enrich session with user identity so subsequent events
-    // (e.g. PageView on thank-you) carry hashed advanced-matching data.
-    // The Pixel auto-hashes these values with SHA-256 before sending.
-    if (typeof window !== 'undefined' && window.fbq && process.env.NEXT_PUBLIC_META_PIXEL_ID) {
-      const phoneDigits = `${selectedCountry.dial}${fields.phone}`.replace(/\D/g, '');
-      window.fbq('init', process.env.NEXT_PUBLIC_META_PIXEL_ID, {
-        em: fields.email.trim().toLowerCase(),
-        ph: phoneDigits,
-        fn: fields.firstName.trim().toLowerCase(),
-        ln: fields.lastName.trim().toLowerCase(),
-        ct: fields.city.trim().toLowerCase().replace(/\s/g, ''),
-        country: selectedCountry.code.toLowerCase(),
-      });
-    }
-
     try {
       const orderRes = await fetch('/api/razorpay/create-order', {
         method: 'POST',
@@ -487,6 +473,7 @@ export default function CheckoutForm() {
             dialCode,
           },
           utm,
+          eventSourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
         }),
       });
 
@@ -505,6 +492,15 @@ export default function CheckoutForm() {
       if (utm.campaign) tyParams.set('utm_campaign', utm.campaign);
       if (utm.content)  tyParams.set('utm_content',  utm.content);
       if (utm.term)     tyParams.set('utm_term',     utm.term);
+
+      setMetaAdvancedMatching({
+        email:     fields.email,
+        phone:     `${dialCode}${fields.phone}`,
+        firstName: fields.firstName,
+        lastName:  fields.lastName,
+        city:      fields.city,
+        country:   countryCode,
+      });
 
       window.location.href = `/new-book-a-call?${tyParams.toString()}`;
     } catch (err) {
