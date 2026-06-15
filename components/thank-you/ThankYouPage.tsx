@@ -1,64 +1,24 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import Player from '@vimeo/player';
+import { useRef, useState } from 'react';
 import { useScrollReveal } from '@/components/shared/useScrollReveal';
 import { useConversionPush } from '@/components/shared/useConversionPush';
 
-/* Swap these two constants when the real thank-you video is ready. */
-const TY_VIDEO_ID = 1180466355;
-const TY_VIDEO_THUMB = 'https://vumbnail.com/1180466355.jpg';
+const TY_VIDEO_URL =
+  'https://tgox-production-bucket.nyc3.cdn.digitaloceanspaces.com/client_funnel_videos/SDP/sdp_thank_you_final_video_02.mp4_v1%20(1080p).mp4';
 
 function VSLVideo() {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<Player | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
-
-  // See LandingPage VSLVideo: pre-boot the player, then play() synchronously
-  // inside the click so playback starts instantly AND with sound (no muting).
-  function ensurePlayer(): Player | null {
-    if (playerRef.current || !hostRef.current) return playerRef.current;
-    const player = new Player(hostRef.current, {
-      id: TY_VIDEO_ID,
-      autoplay: false,
-      muted: false,
-      playsinline: true,
-      responsive: false,
-    });
-    player.on('play', () => setPlaying(true));
-    playerRef.current = player;
-    return player;
-  }
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-    const io = new IntersectionObserver(
-      entries => {
-        if (entries.some(e => e.isIntersecting)) {
-          ensurePlayer();
-          io.disconnect();
-        }
-      },
-      { rootMargin: '300px' }
-    );
-    io.observe(host);
-    return () => {
-      io.disconnect();
-      playerRef.current?.destroy().catch(() => {});
-      playerRef.current = null;
-    };
-  }, []);
 
   function handlePlay() {
     if (playing) return;
-    const player = ensurePlayer();
-    if (!player) return;
-    player.setVolume(1).catch(() => {});
-    player
-      .play()
-      .then(() => setPlaying(true))
-      .catch(() => setPlaying(true));
+    const v = videoRef.current;
+    if (!v) return;
+    // Synchronous play() inside the click gesture → starts with sound.
+    v.muted = false;
+    v.volume = 1;
+    v.play().then(() => setPlaying(true)).catch(() => setPlaying(true));
   }
 
   return (
@@ -77,16 +37,23 @@ function VSLVideo() {
             }
           }}
         >
-          <div ref={hostRef} className="sdp-video-host" />
+          <div className="sdp-video-host">
+            <video
+              ref={videoRef}
+              src={TY_VIDEO_URL}
+              preload="metadata"
+              playsInline
+              controls={playing}
+              controlsList="nodownload"
+              onPlay={() => setPlaying(true)}
+            />
+          </div>
           {!playing && (
-            <>
-              <div className="sdp-video-thumb on" style={{ backgroundImage: `url("${TY_VIDEO_THUMB}")` }} />
-              <div className="sdp-play">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-            </>
+            <div className="sdp-play">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
           )}
         </div>
       </div>

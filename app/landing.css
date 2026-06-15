@@ -564,6 +564,12 @@
   position:absolute!important; inset:0!important;
   width:100%!important; height:100%!important; border:0!important;
 }
+.sdp-root .sdp-video-host video{
+  position:absolute!important; inset:0!important;
+  width:100%!important; height:100%!important; border:0!important;
+  display:block!important; background:#000!important;
+  object-fit:contain!important;
+}
 .sdp-root .sdp-video-thumb{
   position:absolute; inset:0; z-index:2;
   background-size:cover; background-position:center;

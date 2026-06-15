@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import Image from 'next/image';
-import Player from '@vimeo/player';
 import { captureUtm, decorateHref } from '@/lib/utm';
 import { useScrollReveal } from '@/components/shared/useScrollReveal';
 import AnimatedCounter from '@/components/shared/AnimatedCounter';
@@ -317,81 +316,40 @@ function SiteHeader() {
 
 const HERO_MARKERS = ['HbA1c', 'Triglycerides', 'Blood Pressure', 'LDL Cholesterol'];
 const VSL_THUMB = '/vimeo-thumbs/1184772764.jpg';
-const VSL_ID = 1184772764;
+const VSL_URL =
+  'https://tgox-production-bucket.nyc3.cdn.digitaloceanspaces.com/client_funnel_videos/SDP/sdp_vsl_2nd_hook.mp4_v1%20(1080p).mp4';
 
 function VSLVideo() {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<Player | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
-
-  // Boot the Vimeo player into `hostRef` once, on demand. Pre-booting (before
-  // the click) is what makes playback start instantly; calling play() later
-  // synchronously inside the click handler is what preserves the user gesture
-  // the browser requires to play WITH sound (no muting).
-  function ensurePlayer(): Player | null {
-    if (playerRef.current || !hostRef.current) return playerRef.current;
-    const player = new Player(hostRef.current, {
-      id: VSL_ID,
-      autoplay: false,
-      muted: false,
-      playsinline: true,
-      responsive: false,
-    });
-    player.on('play', () => setPlaying(true));
-    playerRef.current = player;
-    return player;
-  }
-
-  // Pre-warm: boot the player as soon as the video scrolls near the viewport,
-  // so the heavy player cold-boot is done before the user ever clicks.
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-    const io = new IntersectionObserver(
-      entries => {
-        if (entries.some(e => e.isIntersecting)) {
-          ensurePlayer();
-          io.disconnect();
-        }
-      },
-      { rootMargin: '300px' }
-    );
-    io.observe(host);
-    // External trigger from the "Watch The Short Video Below" button: play
-    // unmuted and request fullscreen. Dispatched synchronously inside the
-    // button's click handler so the user-gesture context is preserved.
-    const onExternalPlay = () => {
-      const player = ensurePlayer();
-      if (!player) return;
-      player.setVolume(1).catch(() => {});
-      player.play().then(() => setPlaying(true)).catch(() => setPlaying(true));
-      player.requestFullscreen().catch(() => {});
-    };
-    window.addEventListener('sdp:play-vsl-fullscreen', onExternalPlay);
-    return () => {
-      io.disconnect();
-      window.removeEventListener('sdp:play-vsl-fullscreen', onExternalPlay);
-      playerRef.current?.destroy().catch(() => {});
-      playerRef.current = null;
-    };
-  }, []);
 
   function handlePlay() {
     if (playing) return;
-    const player = ensurePlayer();
-    if (!player) return;
-    // Synchronous play() inside the gesture → Vimeo starts with sound.
-    player.setVolume(1).catch(() => {});
-    player
-      .play()
-      .then(() => setPlaying(true))
-      .catch(() => {
-        // Strict browser blocked programmatic unmuted play: reveal the booted
-        // player so the user can tap Vimeo's own button (in-iframe gesture →
-        // guaranteed sound). Never falls back to muted, never hangs.
-        setPlaying(true);
-      });
+    const v = videoRef.current;
+    if (!v) return;
+    // Synchronous play() inside the click gesture → starts with sound.
+    v.muted = false;
+    v.volume = 1;
+    v.play().then(() => setPlaying(true)).catch(() => setPlaying(true));
   }
+
+  useEffect(() => {
+    // External trigger from the "Watch The Short Video Below" button: play
+    // unmuted and request fullscreen. Synchronous inside the button's click
+    // handler so the user-gesture context is preserved.
+    const onExternalPlay = () => {
+      const v = videoRef.current;
+      if (!v) return;
+      v.muted = false;
+      v.volume = 1;
+      v.play().then(() => setPlaying(true)).catch(() => setPlaying(true));
+      v.requestFullscreen().catch(() => {});
+    };
+    window.addEventListener('sdp:play-vsl-fullscreen', onExternalPlay);
+    return () => {
+      window.removeEventListener('sdp:play-vsl-fullscreen', onExternalPlay);
+    };
+  }, []);
 
   return (
     <div className="sdp-video-frame" data-sdp-reveal style={{ ['--d' as string]: '.22s' }}>
@@ -409,7 +367,18 @@ function VSLVideo() {
           }
         }}
       >
-        <div ref={hostRef} className="sdp-video-host" />
+        <div className="sdp-video-host">
+          <video
+            ref={videoRef}
+            src={VSL_URL}
+            poster={VSL_THUMB}
+            preload="auto"
+            playsInline
+            controls={playing}
+            controlsList="nodownload"
+            onPlay={() => setPlaying(true)}
+          />
+        </div>
         {!playing && (
           <>
             <div className="sdp-video-thumb on">
