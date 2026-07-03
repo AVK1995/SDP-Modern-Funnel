@@ -59,34 +59,57 @@ function VideoModal({ videoUrl, onClose }: { videoUrl: string | null; onClose: (
 
   useEffect(() => {
     if (!videoUrl || !contentRef.current) return;
+    const host = contentRef.current;
+    host.innerHTML = '';
 
-    const sep = videoUrl.indexOf('?') > -1 ? '&' : '?';
-    const src = `${videoUrl}${sep}autoplay=1&muted=0&playsinline=1&autopause=0&dnt=1`;
+    const isMp4 = /\.mp4($|\?)/i.test(videoUrl);
+    if (isMp4) {
+      const v = document.createElement('video');
+      v.src = videoUrl;
+      v.controls = true;
+      v.autoplay = true;
+      v.playsInline = true;
+      v.preload = 'auto';
+      v.setAttribute('controlsList', 'nodownload');
+      v.style.width = '100%';
+      v.style.height = '100%';
+      v.style.display = 'block';
+      v.style.background = '#000';
+      v.style.objectFit = 'contain';
+      host.appendChild(v);
+      // The click that opened the modal is still a valid user gesture; try
+      // unmuted play. If a strict browser blocks it, the native controls are
+      // already visible so the user just taps play.
+      v.play().catch(() => { /* user gesture blocked — controls are visible */ });
+    } else {
+      const sep = videoUrl.indexOf('?') > -1 ? '&' : '?';
+      const src = `${videoUrl}${sep}autoplay=1&muted=0&playsinline=1&autopause=0&dnt=1`;
 
-    const iframe = document.createElement('iframe');
-    iframe.src = src;
-    iframe.setAttribute('frameborder', '0');
-    iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen; picture-in-picture');
-    iframe.setAttribute('allowfullscreen', '');
-    iframe.setAttribute('playsinline', '');
+      const iframe = document.createElement('iframe');
+      iframe.src = src;
+      iframe.setAttribute('frameborder', '0');
+      iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen; picture-in-picture');
+      iframe.setAttribute('allowfullscreen', '');
+      iframe.setAttribute('playsinline', '');
 
-    iframe.addEventListener('load', () => {
-      const poke = () => {
-        try {
-          iframe.contentWindow?.postMessage(JSON.stringify({ method: 'setMuted', value: false }), '*');
-          iframe.contentWindow?.postMessage(JSON.stringify({ method: 'setVolume', value: 1 }), '*');
-          iframe.contentWindow?.postMessage(JSON.stringify({ method: 'play' }), '*');
-        } catch {
-          /* cross-origin */
-        }
-      };
-      poke();
-      setTimeout(poke, 250);
-      setTimeout(poke, 800);
-    });
+      iframe.addEventListener('load', () => {
+        const poke = () => {
+          try {
+            iframe.contentWindow?.postMessage(JSON.stringify({ method: 'setMuted', value: false }), '*');
+            iframe.contentWindow?.postMessage(JSON.stringify({ method: 'setVolume', value: 1 }), '*');
+            iframe.contentWindow?.postMessage(JSON.stringify({ method: 'play' }), '*');
+          } catch {
+            /* cross-origin */
+          }
+        };
+        poke();
+        setTimeout(poke, 250);
+        setTimeout(poke, 800);
+      });
 
-    contentRef.current.innerHTML = '';
-    contentRef.current.appendChild(iframe);
+      host.appendChild(iframe);
+    }
+
     document.body.style.overflow = 'hidden';
 
     return () => {
@@ -630,28 +653,28 @@ const TESTIMONIALS: Testimonial[] = [
     name: 'NITESH K.',
     role: 'IT Engineer · UK Government',
     quote: '“I started in my early 40s thinking strength training was for younger men. I was wrong. I’m fitter at 42 than at any point in my life.”',
-    videoUrl: 'https://player.vimeo.com/video/1190697770',
+    videoUrl: 'https://tgox-production-bucket.nyc3.cdn.digitaloceanspaces.com/client_funnel_videos/SDP/nitesh_testimonial.mp4%20(540p).mp4',
     thumbUrl: 'https://vumbnail.com/1190697770.jpg',
   },
   {
     name: 'KARTHIK S.',
     role: 'Sales · Travel-Heavy',
     quote: '“I always believed travel made consistency impossible. Turns out the system was the problem, not my schedule.”',
-    videoUrl: 'https://player.vimeo.com/video/1192160541',
+    videoUrl: 'https://tgox-production-bucket.nyc3.cdn.digitaloceanspaces.com/client_funnel_videos/SDP/karthik_s%20(540p).mp4',
     thumbUrl: 'https://vumbnail.com/1192160541.jpg',
   },
   {
     name: 'GAURAV J.',
     role: 'Corporate · 9-5 With Family',
     quote: '“I’d tried for years. Plans never held against work stress. With SDP, I haven’t missed sessions on vacations or wedding weeks.”',
-    videoUrl: 'https://player.vimeo.com/video/1190697899',
+    videoUrl: 'https://tgox-production-bucket.nyc3.cdn.digitaloceanspaces.com/client_funnel_videos/SDP/gaurav_(540p).mp4',
     thumbUrl: 'https://vumbnail.com/1190697899.jpg',
   },
   {
     name: 'PREM G.',
     role: 'Software Industry',
     quote: '“My doctor told me to stop training because of my cervical issues. SDP built a structure around the injuries. I’m stronger now than before they happened.”',
-    videoUrl: 'https://player.vimeo.com/video/1192143684',
+    videoUrl: 'https://tgox-production-bucket.nyc3.cdn.digitaloceanspaces.com/client_funnel_videos/SDP/pem_g_testimonial_v1%20(1080p).mp4',
     thumbUrl: 'https://vumbnail.com/1192143684.jpg',
   },
   {
@@ -791,8 +814,28 @@ function TestimonialCarousel() {
       state.resumeAt = Date.now() + 900;
       setTimeout(() => { if (!car.matches(':hover')) state.paused = false; }, 50);
     };
-    const guardClick = (e: MouseEvent) => {
-      if (dragMoved > 6) { e.stopPropagation(); e.preventDefault(); dragMoved = 0; }
+    // Combined click handler: (1) swallow the click if the user was dragging
+    // the carousel, (2) otherwise resolve the tapped tile by data-tslide-idx
+    // and open the video modal. Delegating is required because the carousel
+    // clones its set for infinite scroll and cloneNode does not copy React
+    // event listeners — so tapping a cloned tile would otherwise be a no-op.
+    // Threshold 10 gives comfortable tap-vs-drag distinction on mobile.
+    const onCarClick = (e: MouseEvent) => {
+      if (dragMoved > 10) {
+        e.stopPropagation();
+        e.preventDefault();
+        dragMoved = 0;
+        return;
+      }
+      const el = e.target as HTMLElement | null;
+      if (!el) return;
+      const tile = el.closest<HTMLElement>('[data-tslide-idx]');
+      if (!tile) return;
+      const raw = tile.getAttribute('data-tslide-idx');
+      const idx = raw === null ? NaN : parseInt(raw, 10);
+      if (Number.isFinite(idx) && idx >= 0 && idx < TESTIMONIALS.length) {
+        setActiveVideo(TESTIMONIALS[idx].videoUrl);
+      }
     };
 
     car.addEventListener('mouseenter', onEnter);
@@ -804,7 +847,7 @@ function TestimonialCarousel() {
     car.addEventListener('touchmove', dragMove, { passive: false });
     car.addEventListener('touchend', dragEnd, { passive: true });
     car.addEventListener('touchcancel', dragEnd, { passive: true });
-    car.addEventListener('click', guardClick, true);
+    car.addEventListener('click', onCarClick, true);
     window.addEventListener('resize', measure);
 
     return () => {
@@ -818,7 +861,7 @@ function TestimonialCarousel() {
       car.removeEventListener('touchmove', dragMove);
       car.removeEventListener('touchend', dragEnd);
       car.removeEventListener('touchcancel', dragEnd);
-      car.removeEventListener('click', guardClick, true);
+      car.removeEventListener('click', onCarClick, true);
       window.removeEventListener('resize', measure);
       if (cloneRef.current?.parentNode) cloneRef.current.parentNode.removeChild(cloneRef.current);
     };
@@ -833,7 +876,7 @@ function TestimonialCarousel() {
               <article key={idx} className="sdp-tslide">
                 <div
                   className="sdp-tslide-video has-video"
-                  onClick={() => setActiveVideo(t.videoUrl)}
+                  data-tslide-idx={idx}
                 >
                   <div className="sdp-tslide-vthumb" style={{ backgroundImage: `url("${t.thumbUrl}")` }} />
                   <div className="sdp-tslide-play">
